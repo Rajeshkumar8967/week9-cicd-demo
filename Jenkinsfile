@@ -51,6 +51,7 @@ pipeline {
                 echo "Building Docker image..."
                 bat '''
                     docker build -t %DOCKER_IMAGE%:%BUILD_NUMBER% .
+                    if %ERRORLEVEL% NEQ 0 exit /b 1
                 '''
             }
         }
@@ -60,6 +61,7 @@ pipeline {
                 echo "Validating Docker image..."
                 bat '''
                     docker image inspect %DOCKER_IMAGE%:%BUILD_NUMBER%
+                    if %ERRORLEVEL% NEQ 0 exit /b 1
                 '''
             }
         }
@@ -73,20 +75,24 @@ pipeline {
                         variable: 'DOCKER_PASSWORD'
                     )
                 ]) {
-                    bat '''
-                        echo %DOCKER_PASSWORD% | docker login docker.io -u rajeshkumar357 --password-stdin
-                        if %ERRORLEVEL% NEQ 0 (
-                            echo JENKINS AUTHENTICATION FAILED
-                            exit /b 1
-                        )
-                        echo JENKINS AUTHENTICATION SUCCESSFUL
-                        docker push %DOCKER_IMAGE%:%BUILD_NUMBER%
-                        if %ERRORLEVEL% NEQ 0 (
-                            echo DOCKER PUSH FAILED
-                            exit /b 1
-                        )
-                        echo DOCKER PUSH SUCCESSFUL
-                        docker logout docker.io
+                    powershell '''
+                        $password = $env:DOCKER_PASSWORD
+                        $password | & docker login docker.io -u rajeshkumar357 --password-stdin
+                        if ($LASTEXITCODE -ne 0) {
+                            Write-Host "JENKINS AUTHENTICATION FAILED"
+                            exit 1
+                        }
+
+                        Write-Host "JENKINS AUTHENTICATION SUCCESSFUL"
+
+                        & docker push "$env:DOCKER_IMAGE`:$env:BUILD_NUMBER"
+                        if ($LASTEXITCODE -ne 0) {
+                            Write-Host "DOCKER PUSH FAILED"
+                            exit 1
+                        }
+
+                        Write-Host "DOCKER PUSH SUCCESSFUL"
+                        & docker logout docker.io
                     '''
                 }
             }
@@ -97,8 +103,8 @@ pipeline {
         success {
             echo "======================================"
             echo "WEEK 9 CI/CD PIPELINE SUCCESS"
-            echo "Application: %APP_NAME%"
-            echo "Docker Image: %DOCKER_IMAGE%:%BUILD_NUMBER%"
+            echo "Application: ${env.APP_NAME}"
+            echo "Docker Image: ${env.DOCKER_IMAGE}:${env.BUILD_NUMBER}"
             echo "======================================"
         }
         failure {
