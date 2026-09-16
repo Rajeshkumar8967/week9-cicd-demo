@@ -3,7 +3,7 @@ pipeline {
 
     environment {
     APP_NAME = "week9-cicd-demo"
-    DOCKER_IMAGE = "Rajeshkumar8967/week9-cicd-demo"
+    DOCKER_IMAGE = "Rajeshkumar357/week9-cicd-demo"
     PYTHON = "C:\\Users\\91703\\AppData\\Local\\Programs\\Python\\Python314\\python.exe"
 }
 
@@ -60,22 +60,33 @@ pipeline {
         }
 
         stage('Docker Push') {
-            steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKER_USERNAME',
-                        passwordVariable: 'DOCKER_PASSWORD'
-                    )
-                ]) {
-                    bat '''
-                        echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
-                        docker push %DOCKER_IMAGE%:%BUILD_NUMBER%
-                        docker logout
-                    '''
-                }
-            }
+    steps {
+        withCredentials([
+            usernamePassword(
+                credentialsId: 'dockerhub-credentials',
+                usernameVariable: 'DOCKER_USERNAME',
+                passwordVariable: 'DOCKER_PASSWORD'
+            )
+        ]) {
+            bat '''
+                echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+                if %ERRORLEVEL% NEQ 0 (
+                    echo Docker login FAILED
+                    exit /b 1
+                )
+
+                docker push %DOCKER_IMAGE%:%BUILD_NUMBER%
+                if %ERRORLEVEL% NEQ 0 (
+                    echo Docker push FAILED
+                    exit /b 1
+                )
+
+                docker logout
+            '''
         }
+    }
+}
+}
     }
 
     post {
