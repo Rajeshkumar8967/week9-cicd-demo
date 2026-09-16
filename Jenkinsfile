@@ -68,14 +68,13 @@ pipeline {
             steps {
                 echo "Authenticating with Docker Hub and pushing image..."
                 withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKER_USERNAME',
-                        passwordVariable: 'DOCKER_PASSWORD'
+                    string(
+                        credentialsId: 'dockerhub-pat',
+                        variable: 'DOCKER_PASSWORD'
                     )
                 ]) {
                     bat '''
-                        echo %DOCKER_PASSWORD% | docker login docker.io -u %DOCKER_USERNAME% --password-stdin
+                        echo %DOCKER_PASSWORD% | docker login docker.io -u rajeshkumar357 --password-stdin
                         if %ERRORLEVEL% NEQ 0 (
                             echo JENKINS AUTHENTICATION FAILED
                             exit /b 1
