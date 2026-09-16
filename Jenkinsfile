@@ -64,21 +64,9 @@ pipeline {
             }
         }
 
-        stage('Docker Environment Check') {
-            steps {
-                echo "Checking Docker environment used by Jenkins..."
-                bat '''
-                    whoami
-                    echo DOCKER_CONFIG=%DOCKER_CONFIG%
-                    docker version
-                    docker info
-                '''
-            }
-        }
-
         stage('Docker Push') {
             steps {
-                echo "Testing Docker Hub authentication from Jenkins..."
+                echo "Authenticating with Docker Hub and pushing image..."
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'dockerhub-credentials',
@@ -87,8 +75,7 @@ pipeline {
                     )
                 ]) {
                     bat '''
-                        docker logout
-                        echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+                        echo %DOCKER_PASSWORD% | docker login docker.io -u %DOCKER_USERNAME% --password-stdin
                         if %ERRORLEVEL% NEQ 0 (
                             echo JENKINS AUTHENTICATION FAILED
                             exit /b 1
@@ -100,7 +87,7 @@ pipeline {
                             exit /b 1
                         )
                         echo DOCKER PUSH SUCCESSFUL
-                        docker logout
+                        docker logout docker.io
                     '''
                 }
             }
