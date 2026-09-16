@@ -69,7 +69,7 @@ pipeline {
                 echo "Authenticating with Docker Hub and pushing image..."
                 withCredentials([
                     string(
-                        credentialsId: 'dockerhub-pat',
+                        credentialsId: 'dockerhub-pat-2',
                         variable: 'DOCKER_PASSWORD'
                     )
                 ]) {
