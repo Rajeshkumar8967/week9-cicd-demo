@@ -64,22 +64,15 @@ pipeline {
             }
         }
 
-        stage('Docker Credential Fingerprint') {
+        stage('Docker Environment Check') {
             steps {
-                echo "Generating a SHA-256 fingerprint of the Jenkins Docker credential."
-                echo "The Docker token itself will NOT be printed."
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKER_USERNAME',
-                        passwordVariable: 'DOCKER_PASSWORD'
-                    )
-                ]) {
-                    bat '''
-                        echo Username: %DOCKER_USERNAME%
-                        powershell -NoProfile -Command "$bytes=[Text.Encoding]::UTF8.GetBytes($env:DOCKER_PASSWORD); $hash=[Security.Cryptography.SHA256]::Create().ComputeHash($bytes); Write-Host ('Credential SHA256: ' + (($hash | ForEach-Object { $_.ToString('x2') }) -join ''))"
-                    '''
-                }
+                echo "Checking Docker environment used by Jenkins..."
+                bat '''
+                    whoami
+                    echo DOCKER_CONFIG=%DOCKER_CONFIG%
+                    docker version
+                    docker info
+                '''
             }
         }
 
