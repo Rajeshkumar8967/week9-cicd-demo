@@ -2,9 +2,10 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME = "week9-cicd-demo"
-        DOCKER_IMAGE = "rajeshkumar357/week9-cicd-demo"
-    }
+    APP_NAME = "week9-cicd-demo"
+    DOCKER_IMAGE = "Rajeshkumar8967/week9-cicd-demo"
+    PYTHON = "C:\\Users\\91703\\AppData\\Local\\Programs\\Python\\Python314\\python.exe"
+}
 
     stages {
 
@@ -17,7 +18,7 @@ pipeline {
         stage('Build') {
             steps {
                 bat '''
-                    python -m pip install -r requirements.txt
+                    %PYTHON% -m pip install -r requirements.txt
                 '''
             }
         }
@@ -25,7 +26,7 @@ pipeline {
         stage('Test') {
             steps {
                 bat '''
-                    python -m pytest -v
+                    %PYTHON% -m pytest -v
                 '''
             }
         }
