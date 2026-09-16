@@ -64,9 +64,10 @@ pipeline {
             }
         }
 
-        stage('Docker Push') {
+        stage('Docker Credential Fingerprint') {
             steps {
-                echo "Testing Jenkins Docker credential..."
+                echo "Generating a SHA-256 fingerprint of the Jenkins Docker credential."
+                echo "The Docker token itself will NOT be printed."
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'dockerhub-credentials',
@@ -76,31 +77,35 @@ pipeline {
                 ]) {
                     bat '''
                         echo Username: %DOCKER_USERNAME%
+                        powershell -NoProfile -Command "$bytes=[Text.Encoding]::UTF8.GetBytes($env:DOCKER_PASSWORD); $hash=[Security.Cryptography.SHA256]::Create().ComputeHash($bytes); Write-Host ('Credential SHA256: ' + (($hash | ForEach-Object { $_.ToString('x2') }) -join ''))"
+                    '''
+                }
+            }
+        }
 
-                        if "%DOCKER_PASSWORD%"=="" (
-                            echo PASSWORD IS EMPTY
-                            exit /b 1
-                        )
-
-                        echo Password variable is NOT empty
-
+        stage('Docker Push') {
+            steps {
+                echo "Testing Docker Hub authentication from Jenkins..."
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKER_USERNAME',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+                    bat '''
                         docker logout
                         echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
-
                         if %ERRORLEVEL% NEQ 0 (
                             echo JENKINS AUTHENTICATION FAILED
                             exit /b 1
                         )
-
                         echo JENKINS AUTHENTICATION SUCCESSFUL
-
                         docker push %DOCKER_IMAGE%:%BUILD_NUMBER%
-
                         if %ERRORLEVEL% NEQ 0 (
                             echo DOCKER PUSH FAILED
                             exit /b 1
                         )
-
                         echo DOCKER PUSH SUCCESSFUL
                         docker logout
                     '''
