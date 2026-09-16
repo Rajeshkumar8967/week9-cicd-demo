@@ -66,7 +66,7 @@ pipeline {
 
         stage('Docker Push') {
             steps {
-                echo "Testing Docker Hub authentication from Jenkins..."
+                echo "Testing Jenkins Docker credential..."
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'dockerhub-credentials',
@@ -75,19 +75,33 @@ pipeline {
                     )
                 ]) {
                     bat '''
-                        echo Jenkins Docker username: %DOCKER_USERNAME%
-                        docker logout
-                        echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
-                        if %ERRORLEVEL% NEQ 0 (
-                            echo ======================================
-                            echo JENKINS DOCKER LOGIN FAILED
-                            echo ======================================
+                        echo Username: %DOCKER_USERNAME%
+
+                        if "%DOCKER_PASSWORD%"=="" (
+                            echo PASSWORD IS EMPTY
                             exit /b 1
                         )
-                        echo ======================================
-                        echo JENKINS DOCKER LOGIN SUCCESS
-                        echo ======================================
-                        docker info
+
+                        echo Password variable is NOT empty
+
+                        docker logout
+                        echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+
+                        if %ERRORLEVEL% NEQ 0 (
+                            echo JENKINS AUTHENTICATION FAILED
+                            exit /b 1
+                        )
+
+                        echo JENKINS AUTHENTICATION SUCCESSFUL
+
+                        docker push %DOCKER_IMAGE%:%BUILD_NUMBER%
+
+                        if %ERRORLEVEL% NEQ 0 (
+                            echo DOCKER PUSH FAILED
+                            exit /b 1
+                        )
+
+                        echo DOCKER PUSH SUCCESSFUL
                         docker logout
                     '''
                 }
