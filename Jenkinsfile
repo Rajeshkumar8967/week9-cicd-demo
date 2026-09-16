@@ -72,8 +72,9 @@ pipeline {
                 ]) {
                     powershell '''
                         $bytes = [System.Text.Encoding]::UTF8.GetBytes($env:DOCKER_PASSWORD)
-                        $hashBytes = [System.Security.Cryptography.SHA256]::HashData($bytes)
-                        $hash = [Convert]::ToHexString($hashBytes).ToLower()
+                        $sha = New-Object System.Security.Cryptography.SHA256Managed
+                        $hashBytes = $sha.ComputeHash($bytes)
+                        $hash = ([BitConverter]::ToString($hashBytes)).Replace('-', '').ToLower()
                         Write-Host "Docker credential length: $($env:DOCKER_PASSWORD.Length)"
                         Write-Host "Docker credential SHA256: $hash"
                     '''
