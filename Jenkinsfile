@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         APP_NAME = "week9-cicd-demo"
-        DOCKER_IMAGE = "YOUR_DOCKERHUB_USERNAME/week9-cicd-demo"
+        DOCKER_IMAGE = "rajeshkumar357/week9-cicd-demo"
     }
 
     stages {
