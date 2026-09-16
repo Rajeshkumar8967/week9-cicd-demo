@@ -18,18 +18,14 @@ pipeline {
         stage('Build') {
             steps {
                 echo "Installing Python dependencies..."
-                bat '''
-                    "%PYTHON%" -m pip install -r requirements.txt
-                '''
+                bat '"%PYTHON%" -m pip install -r requirements.txt'
             }
         }
 
         stage('Test') {
             steps {
                 echo "Running automated tests..."
-                bat '''
-                    "%PYTHON%" -m pytest -v
-                '''
+                bat '"%PYTHON%" -m pytest -v'
             }
         }
 
@@ -66,6 +62,25 @@ pipeline {
             }
         }
 
+        stage('Credential Diagnostic') {
+            steps {
+                withCredentials([
+                    string(
+                        credentialsId: 'dockerhub-pat-2',
+                        variable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+                    powershell '''
+                        $bytes = [System.Text.Encoding]::UTF8.GetBytes($env:DOCKER_PASSWORD)
+                        $hashBytes = [System.Security.Cryptography.SHA256]::HashData($bytes)
+                        $hash = [Convert]::ToHexString($hashBytes).ToLower()
+                        Write-Host "Docker credential length: $($env:DOCKER_PASSWORD.Length)"
+                        Write-Host "Docker credential SHA256: $hash"
+                    '''
+                }
+            }
+        }
+
         stage('Docker Push') {
             steps {
                 echo "Authenticating with Docker Hub and pushing image..."
@@ -76,15 +91,14 @@ pipeline {
                     )
                 ]) {
                     powershell '''
-                        $password = $env:DOCKER_PASSWORD
-                        $password | & docker login docker.io -u rajeshkumar357 --password-stdin
+                        docker logout docker.io 2>$null
+                        $env:DOCKER_PASSWORD | & docker login docker.io -u rajeshkumar357 --password-stdin
                         if ($LASTEXITCODE -ne 0) {
                             Write-Host "JENKINS AUTHENTICATION FAILED"
                             exit 1
                         }
 
                         Write-Host "JENKINS AUTHENTICATION SUCCESSFUL"
-
                         & docker push "$env:DOCKER_IMAGE`:$env:BUILD_NUMBER"
                         if ($LASTEXITCODE -ne 0) {
                             Write-Host "DOCKER PUSH FAILED"
